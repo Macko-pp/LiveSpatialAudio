@@ -10,59 +10,18 @@
 
 	let track: MediaElementAudioSourceNode;
 
-	let listener: AudioListener;
-	let panner3D: PannerNode;
+	let gainNode: GainNode | null = null;
 
-	let pan3DX: number;
-	let pan3DY: number;
+	// const pannerOptions = { pan: 0 };
+	let panner: StereoPannerNode | null = null;
 
 	function initializeAudio() {
 		if (audioContext && audioElement) {
-			listener = audioContext.listener;
-			listener.positionX.value = 200;
-			listener.positionY.value = 350;
-
-			listener.forwardX.value = 0;
-			listener.forwardY.value = 20; // radius of head
-			listener.forwardZ.value = 0;
-			listener.upX.value = 0;
-			listener.upY.value = 0;
-			listener.upZ.value = 20;
-
-			const panningModel = "HRTF";
-			const innerCone = 360;
-			const outerCone = 360;
-			const outerGain = 1;
-			const distanceModel = "exponential";
-			const maxDistance = 10000;
-			const refDistance = 100;
-			const rollOff = 1;
-			const positionX = pan3DX;
-			const positionY = pan3DY;
-			const positionZ = 0;
-			const orientationX = 0.0;
-			const orientationY = 0.0;
-			const orientationZ = 0.0;
-
-			panner3D = new PannerNode(audioContext, {
-				panningModel,
-				distanceModel,
-				positionX,
-				positionY,
-				positionZ,
-				orientationX,
-				orientationY,
-				orientationZ,
-				refDistance,
-				maxDistance,
-				rolloffFactor: rollOff,
-				coneInnerAngle: innerCone,
-				coneOuterAngle: outerCone,
-				coneOuterGain: outerGain
-			});
+			gainNode = audioContext.createGain();
+			panner = new StereoPannerNode(audioContext, { pan: 0 });
 
 			track = audioContext.createMediaElementSource(audioElement);
-			track.connect(panner3D).connect(audioContext.destination);
+			track.connect(gainNode).connect(panner).connect(audioContext.destination);
 		}
 	}
 
@@ -88,11 +47,20 @@
 		}
 	}
 
-	function panner3DControl() {
-		if (panner3D) {
-			panner3D.positionX.value = pan3DX;
-			panner3D.positionY.value = pan3DY;
-			// console.log(`pan3D: (${panner3D.positionX.value}, ${panner3D.positionY.value})`);
+	let volume: number;
+	let pan: number;
+
+	function volumeControl() {
+		if (gainNode) {
+			gainNode.gain.value = volume;
+			// console.log("volume: ", gainNode.gain.value);
+		}
+	}
+
+	function pannerControl() {
+		if (panner) {
+			panner.pan.value = pan;
+			// console.log("pan: ", panner.pan.value);
 		}
 	}
 
@@ -144,10 +112,11 @@
 				(mouseX - (fixedCircleX + 20)) ** 2 + (mouseY - fixedCircleY) ** 2
 			).toFixed(2);
 
-			pan3DX = mouseX;
-			pan3DY = mouseY;
+			volume = 2 * (1 - (Math.sqrt((mouseX - fixedCircleX) ** 2 + (mouseY - fixedCircleY) ** 2) / 400));
+			pan = (mouseX - fixedCircleX) / 200;
 
-			panner3DControl();
+			volumeControl();
+			pannerControl();
 
 			return `Left: ${distanceLeft}, Right: ${distanceRight}`;
 		}
@@ -213,7 +182,7 @@
 <h1><b>Distance Left:</b> {distanceLeft}</h1>
 <h1><b>Distance Right:</b> {distanceRight}</h1>
 
-<div class="mt-5 flex">
+<div class="flex mt-5">
 	<button
 		class="ring-offset-background focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium whitespace-nowrap text-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
 		data-playing="false"
@@ -225,7 +194,7 @@
 		{buttonIcon}
 		<!-- Play/Pause -->
 	</button>
-
+	
 	<Input
 		class="w-89"
 		type="file"
@@ -244,19 +213,20 @@
 
 <audio bind:this={audioElement} hidden></audio>
 
-<!-- <label class="mt-5 ml-2" for="volume">Volume</label>
+
+<label class="mt-5" for="volume">Volume</label>
 <input
-	type="range"
-	id="volume"
-	class="mt-5 ml-1"
-	min="0"
-	max="2"
-	step="0.01"
-	bind:value={volume}
-	on:input={volumeControl}
+type="range"
+id="volume"
+class="ml-1 mt-5"
+min="0"
+max="2"
+step="0.01"
+bind:value={volume}
+on:input={volumeControl}
 />
-<br />
-<label class="ml-2" for="panner">Panner</label>
+<br>
+<label class="mt-2" for="panner">Panner</label>
 <input
 	type="range"
 	id="panner"
@@ -266,4 +236,4 @@
 	step="0.01"
 	bind:value={pan}
 	on:input={pannerControl}
-/> -->
+/>
