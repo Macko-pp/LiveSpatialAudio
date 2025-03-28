@@ -12,13 +12,17 @@
 
 	let gainNode: GainNode | null = null;
 
+	// const pannerOptions = { pan: 0 };
+	let panner: StereoPannerNode | null = null;
+
 	function initializeAudio() {
 		console.log("initializeAudio");
 		if (audioContext && audioElement) {
-			console.log("audioContext, audioElement, gainNode");
 			gainNode = audioContext.createGain();
+			panner = new StereoPannerNode(audioContext, { pan: 0 });
+
 			track = audioContext.createMediaElementSource(audioElement);
-			track.connect(gainNode).connect(audioContext.destination);
+			track.connect(gainNode).connect(panner).connect(audioContext.destination);
 		}
 	}
 
@@ -45,11 +49,19 @@
 	}
 
 	let volume: number;
+	let pan: number;
 
 	function volumeControl() {
 		if (gainNode) {
 			gainNode.gain.value = volume;
 			// console.log("volume: ", gainNode.gain.value);
+		}
+	}
+
+	function pannerControl() {
+		if (panner) {
+			panner.pan.value = pan;
+			console.log("pan: ", panner.pan.value);
 		}
 	}
 
@@ -101,9 +113,11 @@
 				(mouseX - (fixedCircleX + 20)) ** 2 + (mouseY - fixedCircleY) ** 2
 			).toFixed(2);
 
-			volume = Math.sqrt((mouseX - fixedCircleX) ** 2 + (mouseY - fixedCircleY) ** 2) / 200;
+			volume = 2 * (1 - (Math.sqrt((mouseX - fixedCircleX) ** 2 + (mouseY - fixedCircleY) ** 2) / 400));
+			pan = (mouseX - fixedCircleX) / 200;
 
 			volumeControl();
+			pannerControl();
 
 			return `Left: ${distanceLeft}, Right: ${distanceRight}`;
 		}
@@ -116,7 +130,6 @@
 		moveCircle();
 		getDistance();
 	}
-
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -157,41 +170,58 @@
 <h1><b>Distance Left:</b> {distanceLeft}</h1>
 <h1><b>Distance Right:</b> {distanceRight}</h1>
 
-<Input
-	class="mt-5 w-96"
-	type="file"
-	on:change={(e) => {
-		const file = (e.target as HTMLInputElement)?.files?.[0];
-		if (file) {
-			const url = URL.createObjectURL(file);
-			if (audioElement) {
-				audioElement.src = url;
-				initializeAudio();
+<div class="flex mt-5 ml-2">
+	<button
+		class="ring-offset-background focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium whitespace-nowrap text-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+		data-playing="false"
+		role="switch"
+		aria-checked="false"
+		bind:this={playButton}
+		on:click={playAudio}
+	>
+		{buttonIcon}
+		<!-- Play/Pause -->
+	</button>
+	
+	<Input
+		class="w-96"
+		type="file"
+		on:change={(e) => {
+			const file = (e.target as HTMLInputElement)?.files?.[0];
+			if (file) {
+				const url = URL.createObjectURL(file);
+				if (audioElement) {
+					audioElement.src = url;
+					initializeAudio();
+				}
 			}
-		}
-	}}
-/>
+		}}
+	/>
+</div>
 
 <audio bind:this={audioElement} hidden></audio>
 
-<button
-	class="ring-offset-background focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium whitespace-nowrap text-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
-	data-playing="false"
-	role="switch"
-	aria-checked="false"
-	bind:this={playButton}
-	on:click={playAudio}
->
-	{buttonIcon}
-	<!-- Play/Pause -->
-</button>
 
+<label class="ml-2 mt-5" for="volume">Volume</label>
+<input
+type="range"
+id="volume"
+class="ml-1 mt-5"
+min="0"
+max="2"
+step="0.01"
+bind:value={volume}
+on:input={volumeControl}
+/>
+<br>
+<label class="ml-2" for="panner">Panner</label>
 <input
 	type="range"
-	id="volume"
-	min="0"
-	max="2"
+	id="panner"
+	class="ml-1"
+	min="-1"
+	max="1"
 	step="0.01"
-	bind:value={volume}
-	on:input={volumeControl}
+	bind:value={pan}
+	on:input={pannerControl}
 />
