@@ -122,10 +122,15 @@
 		}
 	}
 
-	function moveMouse(e: { pageX: number; pageY: number }) {
-		mouseX = e.pageX;
-		mouseY = e.pageY;
-
+	function moveMouse(e: MouseEvent | TouchEvent) {
+		if (e instanceof MouseEvent) {
+			mouseX = e.pageX - (window.innerWidth / 2) + 200;
+			mouseY = e.pageY - 77;
+		} else if (e.touches && e.touches.length > 0) {
+			mouseX = e.touches[0].pageX - (window.innerWidth / 2) + 200;
+			mouseY = e.touches[0].pageY - 77;
+		}
+	
 		moveCircle();
 		getDistance();
 	}
@@ -139,6 +144,7 @@
 	width="400"
 	height="400"
 	on:mousemove={moveMouse}
+	on:touchmove={moveMouse}
 >
 	<!-- Fixed circle at the bottom middle -->
 	<circle bind:this={fixedCircle} cx="200" cy="350" r="20" fill="blue" id="fixedCircle" />
@@ -151,6 +157,13 @@
 			dragging = true;
 		}}
 		on:mouseup={() => {
+			dragging = false;
+		}}
+
+		on:touchstart={() => {
+			dragging = true;
+		}}
+		on:touchend={() => {
 			dragging = false;
 		}}
 		cx="200"
