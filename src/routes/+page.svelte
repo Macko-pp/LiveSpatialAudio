@@ -20,7 +20,7 @@
 		if (audioContext && audioElement) {
 			listener = audioContext.listener;
 			listener.positionX.value = 200;
-			listener.positionY.value = 350;
+			listener.positionY.value = 200;
 
 			listener.forwardX.value = 0;
 			listener.forwardY.value = 20; // radius of head
@@ -35,7 +35,7 @@
 			const outerGain = 1;
 			const distanceModel = "exponential";
 			const maxDistance = 10000;
-			const refDistance = 100;
+			const refDistance = 50;
 			const rollOff = 1;
 			const positionX = pan3DX;
 			const positionY = pan3DY;
@@ -155,15 +155,64 @@
 
 	function moveMouse(e: MouseEvent | TouchEvent) {
 		if (e instanceof MouseEvent) {
-			mouseX = e.pageX - (window.innerWidth / 2) + 200;
+			mouseX = e.pageX - window.innerWidth / 2 + 200;
 			mouseY = e.pageY - 77;
 		} else if (e.touches && e.touches.length > 0) {
-			mouseX = e.touches[0].pageX - (window.innerWidth / 2) + 200;
+			mouseX = e.touches[0].pageX - window.innerWidth / 2 + 200;
 			mouseY = e.touches[0].pageY - 77;
 		}
-	
+
 		moveCircle();
 		getDistance();
+	}
+
+	function circleSurround() {
+		let angle = 0;
+		let radius = 100;
+		let revolutions = 3;
+		let duration = 3; // seconds per revolution
+		let totalTime = revolutions * duration * 1000; // total time in milliseconds
+		let interval = 10; // update interval in milliseconds
+
+		if (!audioContext || !panner3D) return;
+
+		let startTime = performance.now();
+
+		function updatePosition() {
+			let elapsedTime = performance.now() - startTime;
+
+			if (elapsedTime > totalTime) {
+				// Stop after completing the revolutions
+				return;
+			}
+
+			// Calculate the angle based on elapsed time
+			angle = (2 * Math.PI * (elapsedTime % (duration * 1000))) / (duration * 1000);
+
+			// Update the position of the sound source
+			panner3D.positionX.value = listener.positionX.value + radius * Math.cos(angle);
+			panner3D.positionY.value = listener.positionY.value + radius * Math.sin(angle);
+
+			// Update the draggable circle's position to match the sound source
+			draggableCircle.setAttribute("cx", panner3D.positionX.value);
+			draggableCircle.setAttribute("cy", panner3D.positionY.value);
+
+			// Update the lines to connect the draggable circle and fixed circle
+			lineLeft.setAttribute("x1", panner3D.positionX.value);
+			lineLeft.setAttribute("y1", panner3D.positionY.value);
+			lineLeft.setAttribute("x2", fixedCircleX - 20);
+			lineLeft.setAttribute("y2", fixedCircleY);
+
+			lineRight.setAttribute("x1", panner3D.positionX.value);
+			lineRight.setAttribute("y1", panner3D.positionY.value);
+			lineRight.setAttribute("x2", fixedCircleX + 20);
+			lineRight.setAttribute("y2", fixedCircleY);
+
+			// Schedule the next update
+			setTimeout(updatePosition, interval);
+		}
+
+		updatePosition();
 	}
 </script>
 
@@ -178,7 +227,7 @@
 	on:touchmove={moveMouse}
 >
 	<!-- Fixed circle at the bottom middle -->
-	<circle bind:this={fixedCircle} cx="200" cy="350" r="20" fill="blue" id="fixedCircle" />
+	<circle bind:this={fixedCircle} cx="200" cy="200" r="20" fill="blue" id="fixedCircle" />
 
 	<!-- Draggable circle in the center -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -190,7 +239,6 @@
 		on:mouseup={() => {
 			dragging = false;
 		}}
-
 		on:touchstart={() => {
 			dragging = true;
 		}}
@@ -198,7 +246,7 @@
 			dragging = false;
 		}}
 		cx="200"
-		cy="200"
+		cy="100"
 		r="20"
 		fill="red"
 		class="draggable"
@@ -206,12 +254,12 @@
 	/>
 
 	<!-- Dotted lines -->
-	<line bind:this={lineLeft} id="lineLeft" x1="200" y1="200" x2="200" y2="350" stroke="black" />
-	<line bind:this={lineRight} id="lineRight" x1="200" y1="200" x2="200" y2="350" stroke="black" />
+	<line bind:this={lineLeft} id="lineLeft" x1="200" y1="100" x2="180" y2="200" stroke="black" />
+	<line bind:this={lineRight} id="lineRight" x1="200" y1="100" x2="220" y2="200" stroke="black" />
 </svg>
 
-<h1><b>Distance Left:</b> {distanceLeft}</h1>
-<h1><b>Distance Right:</b> {distanceRight}</h1>
+<!-- <h1><b>Distance Left:</b> {distanceLeft}</h1> -->
+<!-- <h1><b>Distance Right:</b> {distanceRight}</h1> -->
 
 <div class="mt-5 flex">
 	<button
@@ -243,27 +291,7 @@
 </div>
 
 <audio bind:this={audioElement} hidden></audio>
-
-<!-- <label class="mt-5 ml-2" for="volume">Volume</label>
-<input
-	type="range"
-	id="volume"
-	class="mt-5 ml-1"
-	min="0"
-	max="2"
-	step="0.01"
-	bind:value={volume}
-	on:input={volumeControl}
-/>
-<br />
-<label class="ml-2" for="panner">Panner</label>
-<input
-	type="range"
-	id="panner"
-	class="ml-1"
-	min="-1"
-	max="1"
-	step="0.01"
-	bind:value={pan}
-	on:input={pannerControl}
-/> -->
+<button
+	class="ring-offset-background focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium whitespace-nowrap text-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+	on:click={circleSurround}>🔁</button
+>

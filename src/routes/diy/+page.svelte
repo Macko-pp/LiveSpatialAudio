@@ -147,7 +147,7 @@
 	on:touchmove={moveMouse}
 >
 	<!-- Fixed circle at the bottom middle -->
-	<circle bind:this={fixedCircle} cx="200" cy="350" r="20" fill="blue" id="fixedCircle" />
+	<circle bind:this={fixedCircle} cx="200" cy="200" r="20" fill="blue" id="fixedCircle" />
 
 	<!-- Draggable circle in the center -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -167,7 +167,7 @@
 			dragging = false;
 		}}
 		cx="200"
-		cy="200"
+		cy="100"
 		r="20"
 		fill="red"
 		class="draggable"
@@ -179,8 +179,8 @@
 	<line bind:this={lineRight} id="lineRight" x1="200" y1="200" x2="200" y2="350" stroke="black" />
 </svg>
 
-<h1><b>Distance Left:</b> {distanceLeft}</h1>
-<h1><b>Distance Right:</b> {distanceRight}</h1>
+<!-- <h1><b>Distance Left:</b> {distanceLeft}</h1> -->
+<!-- <h1><b>Distance Right:</b> {distanceRight}</h1> -->
 
 <div class="flex mt-5">
 	<button
