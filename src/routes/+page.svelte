@@ -168,7 +168,7 @@
 
 	function circleSurround() {
 		let angle = 0;
-		let radius = 100;
+		let radius = 125;
 		let revolutions = 3;
 		let duration = 3; // seconds per revolution
 		let totalTime = revolutions * duration * 1000; // total time in milliseconds
@@ -291,7 +291,10 @@
 </div>
 
 <audio bind:this={audioElement} hidden></audio>
-<button
-	class="ring-offset-background focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium whitespace-nowrap text-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
-	on:click={circleSurround}>🔁</button
->
+<div class="flex">
+	<button
+		class="ring-offset-background focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium whitespace-nowrap text-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+		on:click={circleSurround}>↻</button
+	>
+	<h1 class="pt-2 ml-2">Go Round and Round</h1>
+</div>
