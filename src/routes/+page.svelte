@@ -4,10 +4,6 @@
 	let audioContext: AudioContext | null = null;
 	let audioElement: HTMLAudioElement | null = null;
 
-	if (typeof window !== "undefined") {
-		audioContext = new AudioContext();
-	}
-
 	let track: MediaElementAudioSourceNode;
 
 	let listener: AudioListener;
@@ -16,18 +12,47 @@
 	let pan3DX: number;
 	let pan3DY: number;
 
+	let positionX: number;
+	let positionY: number;
+
+	let forwardX: number;
+	let forwardY: number;
+	let forwardZ: number;
+	let upX: number;
+	let upY: number;
+	let upZ: number;
+
 	function initializeAudio() {
+		if (typeof window !== "undefined") {
+			audioContext = new AudioContext();
+		}
+
 		if (audioContext && audioElement) {
 			listener = audioContext.listener;
-			listener.positionX.value = 200;
-			listener.positionY.value = 200;
+			positionX = 200;
+			positionY = 200;
 
-			listener.forwardX.value = 0;
-			listener.forwardY.value = 20; // radius of head
-			listener.forwardZ.value = 0;
-			listener.upX.value = 0;
-			listener.upY.value = 0;
-			listener.upZ.value = 20;
+			forwardX = 0;
+			forwardY = 20; // radius of head
+			forwardZ = 0;
+			upX = 0;
+			upY = 0;
+			upZ = 20;
+
+			if (listener.positionX) {
+				listener.positionX.value = positionX;
+				listener.positionY.value = positionY;
+
+				listener.forwardX.value = forwardX;
+				listener.forwardY.value = forwardY; // radius of head
+				listener.forwardZ.value = forwardZ;
+				listener.upX.value = upX;
+				listener.upY.value = upY;
+				listener.upZ.value = upZ;
+			} else {
+				listener.setPosition(positionX, positionY, 0);
+				listener.setOrientation(forwardX, forwardY, forwardZ, upX, upY, upZ);
+			}
 
 			panner3D = new PannerNode(audioContext, {
 				panningModel: "HRTF",
@@ -46,7 +71,7 @@
 				coneOuterGain: 1
 			});
 
-			track = audioContext.createMediaElementSource(audioElement);
+			if (!track) track = audioContext.createMediaElementSource(audioElement);
 			track.connect(panner3D).connect(audioContext.destination);
 		}
 	}
@@ -176,11 +201,17 @@
 
 			// Calculate the angle based on elapsed time
 			const revolutionSpeed = -duration + 11;
-			angle = (2 * Math.PI * (elapsedTime % (revolutionSpeed * 1000))) / (revolutionSpeed * 1000);
+			angle =
+				(2 * Math.PI * (elapsedTime % (revolutionSpeed * 1000))) / (revolutionSpeed * 1000);
 
 			// Update the position of the sound source
-			panner3D.positionX.value = listener.positionX.value + revolveRadius * Math.cos(angle);
-			panner3D.positionY.value = listener.positionY.value + revolveRadius * Math.sin(angle);
+			if (listener.positionX){
+				panner3D.positionX.value = listener.positionX.value + revolveRadius * Math.cos(angle);
+				panner3D.positionY.value = listener.positionY.value + revolveRadius * Math.sin(angle);
+			} else {
+				panner3D.positionX.value = positionX + revolveRadius * Math.cos(angle);
+				panner3D.positionY.value = positionY + revolveRadius * Math.sin(angle);
+			}
 
 			// Update the draggable circle's position to match the sound source
 			draggableCircle.setAttribute("cx", panner3D.positionX.value);
@@ -292,9 +323,24 @@
 {#if revolving == true}
 	<div class="mt-3">
 		<label for="radius">Radius:</label>
-		<input type="range" name="radius" id="radius" bind:value={revolveRadius} min="0" max="200" />
-		<br>
+		<input
+			type="range"
+			name="radius"
+			id="radius"
+			bind:value={revolveRadius}
+			min="0"
+			max="200"
+		/>
+		<br />
 		<label for="duration">Speed:</label>
-		<input type="range" name="duration" id="duration" bind:value={duration} min="1" max="10" step="0.1" />
+		<input
+			type="range"
+			name="duration"
+			id="duration"
+			bind:value={duration}
+			min="1"
+			max="10"
+			step="0.1"
+		/>
 	</div>
 {/if}

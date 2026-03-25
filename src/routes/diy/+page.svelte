@@ -4,10 +4,6 @@
 	let audioContext: AudioContext | null = null;
 	let audioElement: HTMLAudioElement | null = null;
 
-	if (typeof window !== "undefined") {
-		audioContext = new AudioContext();
-	}
-
 	let track: MediaElementAudioSourceNode;
 
 	let gainNode: GainNode | null = null;
@@ -16,11 +12,18 @@
 	let panner: StereoPannerNode | null = null;
 
 	function initializeAudio() {
+		if (typeof window !== "undefined") {
+			audioContext = new AudioContext();
+		}
+
 		if (audioContext && audioElement) {
 			gainNode = audioContext.createGain();
 			panner = new StereoPannerNode(audioContext, { pan: 0 });
 
-			track = audioContext.createMediaElementSource(audioElement);
+			if (!track) {
+				track = audioContext.createMediaElementSource(audioElement);
+			}
+
 			track.connect(gainNode).connect(panner).connect(audioContext.destination);
 		}
 	}
@@ -112,7 +115,9 @@
 				(mouseX - (fixedCircleX + 20)) ** 2 + (mouseY - fixedCircleY) ** 2
 			).toFixed(2);
 
-			volume = 2 * (1 - (Math.sqrt((mouseX - fixedCircleX) ** 2 + (mouseY - fixedCircleY) ** 2) / 400));
+			volume =
+				2 *
+				(1 - Math.sqrt((mouseX - fixedCircleX) ** 2 + (mouseY - fixedCircleY) ** 2) / 400);
 			pan = (mouseX - fixedCircleX) / 200;
 
 			volumeControl();
@@ -123,14 +128,13 @@
 	}
 
 	function moveMouse(e: MouseEvent | TouchEvent) {
-		if (e instanceof MouseEvent) {
-			mouseX = e.pageX - (window.innerWidth / 2) + 200;
-			mouseY = e.pageY - 77;
-		} else if (e.touches && e.touches.length > 0) {
-			mouseX = e.touches[0].pageX - (window.innerWidth / 2) + 200;
-			mouseY = e.touches[0].pageY - 77;
-		}
-	
+		const rect = svg.getBoundingClientRect();
+		const clientX = e instanceof MouseEvent ? e.clientX : e.touches[0].clientX;
+		const clientY = e instanceof MouseEvent ? e.clientY : e.touches[0].clientY;
+
+		mouseX = clientX - rect.left;
+		mouseY = clientY - rect.top;
+
 		moveCircle();
 		getDistance();
 	}
@@ -159,7 +163,6 @@
 		on:mouseup={() => {
 			dragging = false;
 		}}
-
 		on:touchstart={() => {
 			dragging = true;
 		}}
@@ -182,7 +185,7 @@
 <!-- <h1><b>Distance Left:</b> {distanceLeft}</h1> -->
 <!-- <h1><b>Distance Right:</b> {distanceRight}</h1> -->
 
-<div class="flex mt-5">
+<div class="mt-5 flex">
 	<button
 		class="ring-offset-background focus-visible:ring-ring inline-flex h-10 items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium whitespace-nowrap text-slate-50 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
 		data-playing="false"
@@ -194,7 +197,7 @@
 		{buttonIcon}
 		<!-- Play/Pause -->
 	</button>
-	
+
 	<Input
 		class="w-89"
 		type="file"
@@ -213,19 +216,18 @@
 
 <audio bind:this={audioElement} hidden></audio>
 
-
 <label class="mt-5" for="volume">Volume</label>
 <input
-type="range"
-id="volume"
-class="ml-1 mt-5"
-min="0"
-max="2"
-step="0.01"
-bind:value={volume}
-on:input={volumeControl}
+	type="range"
+	id="volume"
+	class="mt-5 ml-1"
+	min="0"
+	max="2"
+	step="0.01"
+	bind:value={volume}
+	on:input={volumeControl}
 />
-<br>
+<br />
 <label class="mt-2" for="panner">Panner</label>
 <input
 	type="range"
